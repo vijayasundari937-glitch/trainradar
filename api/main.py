@@ -11,6 +11,8 @@ from fastapi import FastAPI
 from config.settings import settings
 from config.logging_config import setup_logging, get_logger
 from api.routers import health, positions, delays, alerts, search, stats
+from api.auth import verify_api_key
+from fastapi import Depends
 
 # Set up logging first
 setup_logging()
@@ -65,12 +67,35 @@ app = FastAPI(
 )
 
 # Register routers
+# Health check is public — no auth needed
 app.include_router(health.router, tags=["Health"])
-app.include_router(positions.router, tags=["Positions"])
-app.include_router(delays.router, tags=["Delays"])
-app.include_router(alerts.router, tags=["Alerts"])
-app.include_router(search.router, tags=["Search"])
-app.include_router(stats.router, tags=["Statistics"])
+
+# All other endpoints require API key
+app.include_router(
+    positions.router,
+    tags=["Positions"],
+    dependencies=[Depends(verify_api_key)]
+)
+app.include_router(
+    delays.router,
+    tags=["Delays"],
+    dependencies=[Depends(verify_api_key)]
+)
+app.include_router(
+    alerts.router,
+    tags=["Alerts"],
+    dependencies=[Depends(verify_api_key)]
+)
+app.include_router(
+    search.router,
+    tags=["Search"],
+    dependencies=[Depends(verify_api_key)]
+)
+app.include_router(
+    stats.router,
+    tags=["Statistics"],
+    dependencies=[Depends(verify_api_key)]
+)
 
 
 @app.get("/")

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+    api_secret_key: str = "trainradar-secret-key-2026"
     tfl_api_key: str = ""
     tfl_base_url: str = "https://api.tfl.gov.uk"
     tfl_line: str = "elizabeth"
