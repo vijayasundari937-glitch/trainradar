@@ -30,7 +30,8 @@ class Settings(BaseSettings):
 
     redis_url: str = "redis://localhost:6379/0"
     train_api_poll_interval_seconds: int = 30
-
+    train_ws_url: str = "wss://live.example.com/positions"
+    train_ws_reconnect_delay: int = 5
 
 @lru_cache
 def get_settings() -> Settings:
