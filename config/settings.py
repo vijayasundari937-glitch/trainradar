@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     db_name: str = "trainradar_db"
 
     redis_url: str = "redis://localhost:6379/0"
+    train_api_poll_interval_seconds: int = 30
 
 
 @lru_cache
