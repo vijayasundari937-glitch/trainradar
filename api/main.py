@@ -10,7 +10,7 @@ import asyncio
 from fastapi import FastAPI
 from config.settings import settings
 from config.logging_config import setup_logging, get_logger
-from api.routers import health, positions
+from api.routers import health, positions, delays, alerts
 
 # Set up logging first
 setup_logging()
@@ -67,6 +67,8 @@ app = FastAPI(
 # Register routers
 app.include_router(health.router, tags=["Health"])
 app.include_router(positions.router, tags=["Positions"])
+app.include_router(delays.router, tags=["Delays"])
+app.include_router(alerts.router, tags=["Alerts"])
 
 
 @app.get("/")
