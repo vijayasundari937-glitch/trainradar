@@ -5,11 +5,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=[".env", ".env.tfl"],
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
     )
+    tfl_api_key: str = ""
+    tfl_base_url: str = "https://api.tfl.gov.uk"
+    tfl_line: str = "elizabeth"
+    tfl_stop_id: str = "940GZZLUSTD"
+    tfl_poll_interval_seconds: int = 30
 
     app_env: str = "development"
     app_name: str = "TrainRadar"
