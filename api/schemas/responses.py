@@ -47,3 +47,32 @@ class HealthResponse(BaseModel):
     status:   str
     app_name: str
     version:  str = "1.0.0"
+
+class RouteStats(BaseModel):
+    """Statistics for one route."""
+    route_id:        str
+    total_updates:   int
+    avg_delay_secs:  Optional[float] = None
+    max_delay_secs:  Optional[int] = None
+    on_time_percent: Optional[float] = None
+
+
+class SourceStats(BaseModel):
+    """Breakdown of data by source."""
+    source:          str
+    position_count:  int
+
+
+class NetworkStats(BaseModel):
+    """Overall network statistics."""
+    total_trains:       int
+    total_positions:    int
+    total_delays:       int
+    total_alerts:       int
+    active_alerts:      int
+    avg_delay_secs:     Optional[float] = None
+    max_delay_secs:     Optional[int] = None
+    on_time_percent:    Optional[float] = None
+    most_delayed_routes: List[RouteStats] = []
+    by_source:          List[SourceStats] = []
+    generated_at:       datetime
