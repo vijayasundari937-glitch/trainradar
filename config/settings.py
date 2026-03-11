@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     train_api_poll_interval_seconds: int = 30
     train_ws_url: str = "wss://live.example.com/positions"
     train_ws_reconnect_delay: int = 5
+    gtfs_rt_vehicle_positions_url: str = "https://gtfs.example.com/vehicle_positions"
+    gtfs_rt_trip_updates_url: str = "https://gtfs.example.com/trip_updates"
+    gtfs_rt_alerts_url: str = "https://gtfs.example.com/alerts"
+    gtfs_rt_poll_interval_seconds: int = 15
+    gtfs_rt_api_key: str = ""
 
 @lru_cache
 def get_settings() -> Settings:
