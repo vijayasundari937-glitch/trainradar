@@ -1,12 +1,11 @@
 """
 TrainRadar - Delays Router
-----------------------------
-API endpoints for querying train delay information.
-arrival_delay is in seconds — positive = late, negative = early.
+With enhanced filtering.
 """
 
 from fastapi import APIRouter, Query
 from typing import List, Optional
+from datetime import datetime
 from sqlalchemy import select, desc
 from api.schemas.responses import TripUpdateResponse
 from db.database import get_db_session
@@ -19,17 +18,23 @@ router = APIRouter()
 
 @router.get("/delays", response_model=List[TripUpdateResponse])
 async def get_delays(
-    route_id: Optional[str] = Query(None, description="Filter by route ID"),
+    route_id:  Optional[str] = Query(None, description="Filter by route ID"),
+    stop_id:   Optional[str] = Query(None, description="Filter by stop ID"),
     min_delay: Optional[int] = Query(None, description="Minimum delay in seconds"),
-    limit: int = Query(100, description="Max number of results", le=1000),
+    max_delay: Optional[int] = Query(None, description="Maximum delay in seconds"),
+    since:     Optional[datetime] = Query(None, description="Only show updates after this time"),
+    limit:     int = Query(100, description="Max results", le=1000),
 ):
     """
-    Returns the latest trip delay updates.
+    Returns trip delay updates with optional filters.
 
     Examples:
         GET /delays
         GET /delays?route_id=ROUTE_A
-        GET /delays?min_delay=60   (only show trains 60+ seconds late)
+        GET /delays?stop_id=STOP_01
+        GET /delays?min_delay=60
+        GET /delays?min_delay=60&max_delay=300
+        GET /delays?route_id=ROUTE_A&min_delay=120
     """
     async with get_db_session() as session:
         query = (
@@ -40,9 +45,14 @@ async def get_delays(
 
         if route_id:
             query = query.where(TripUpdate.route_id == route_id)
-
+        if stop_id:
+            query = query.where(TripUpdate.stop_id == stop_id)
         if min_delay is not None:
             query = query.where(TripUpdate.arrival_delay >= min_delay)
+        if max_delay is not None:
+            query = query.where(TripUpdate.arrival_delay <= max_delay)
+        if since:
+            query = query.where(TripUpdate.time >= since)
 
         result = await session.execute(query)
         updates = result.scalars().all()
@@ -54,7 +64,7 @@ async def get_delays(
 @router.get("/delays/{trip_id}", response_model=List[TripUpdateResponse])
 async def get_trip_delays(
     trip_id: str,
-    limit: int = Query(50, description="Max number of results", le=500),
+    limit: int = Query(50, description="Max results", le=500),
 ):
     """
     Returns delay history for one specific trip.
@@ -72,6 +82,4 @@ async def get_trip_delays(
         result = await session.execute(query)
         updates = result.scalars().all()
 
-    logger.info("api.trip_delays_fetched",
-                trip_id=trip_id, count=len(updates))
     return updates

@@ -1,11 +1,9 @@
 """
 TrainRadar - Alerts Router
-----------------------------
-API endpoints for querying service alerts.
-Alerts include delays, cancellations, detours etc.
+With enhanced filtering.
 """
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from typing import List, Optional
 from sqlalchemy import select, desc, or_
 from datetime import datetime, timezone
@@ -20,17 +18,22 @@ router = APIRouter()
 
 @router.get("/alerts", response_model=List[ServiceAlertResponse])
 async def get_alerts(
-    active_only: bool = Query(True, description="Only return currently active alerts"),
-    route_id: Optional[str] = Query(None, description="Filter by route ID"),
-    limit: int = Query(50, description="Max number of results", le=500),
+    active_only: bool = Query(True, description="Only return active alerts"),
+    effect:      Optional[str] = Query(None, description="Filter by effect e.g. DELAY, REDUCED_SERVICE"),
+    cause:       Optional[str] = Query(None, description="Filter by cause e.g. STRIKE, TECHNICAL_PROBLEM"),
+    route_id:    Optional[str] = Query(None, description="Filter by route ID"),
+    limit:       int = Query(50, description="Max results", le=500),
 ):
     """
-    Returns service alerts.
+    Returns service alerts with optional filters.
 
     Examples:
         GET /alerts
         GET /alerts?active_only=false
+        GET /alerts?effect=DELAY
+        GET /alerts?cause=STRIKE
         GET /alerts?route_id=ROUTE_A
+        GET /alerts?effect=DELAY&active_only=true
     """
     async with get_db_session() as session:
         query = (
@@ -41,14 +44,16 @@ async def get_alerts(
 
         if active_only:
             now = datetime.now(timezone.utc)
-            # Return alerts where:
-            # - active_until is in the future OR active_until is not set
             query = query.where(
                 or_(
                     ServiceAlert.active_until >= now,
                     ServiceAlert.active_until.is_(None),
                 )
             )
+        if effect:
+            query = query.where(ServiceAlert.effect == effect)
+        if cause:
+            query = query.where(ServiceAlert.cause == cause)
 
         result = await session.execute(query)
         alerts = result.scalars().all()
@@ -60,7 +65,7 @@ async def get_alerts(
 @router.get("/alerts/{alert_id}", response_model=ServiceAlertResponse)
 async def get_alert(alert_id: str):
     """
-    Returns one specific alert by its ID.
+    Returns one specific alert by ID.
 
     Example:
         GET /alerts/ALERT_001
@@ -73,7 +78,6 @@ async def get_alert(alert_id: str):
         alert = result.scalar_one_or_none()
 
     if alert is None:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Alert not found")
 
     return alert
