@@ -64,7 +64,41 @@ app = FastAPI(
     description="Real-Time Train Data Ingestion & ETL Platform",
     version="1.0.0",
     lifespan=lifespan,
+    swagger_ui_parameters={"persistAuthorization": True},
 )
+
+# Tell Swagger UI about our API key auth
+from fastapi.openapi.utils import get_openapi
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="TrainRadar",
+        version="1.0.0",
+        description="Real-Time Train Data Ingestion & ETL Platform",
+        routes=app.routes,
+    )
+    # Add the security scheme definition
+    openapi_schema["components"]["securitySchemes"] = {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key",
+        }
+    }
+    # Apply security to ALL paths except /health and /
+    for path, methods in openapi_schema["paths"].items():
+        if path in ["/health", "/"]:
+            continue
+        for method in methods.values():
+            method["security"] = [{"ApiKeyAuth": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 # Register routers
 # Health check is public — no auth needed
